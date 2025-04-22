@@ -2,10 +2,13 @@ import '@ton/test-utils';
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano } from '@ton/core';
 import { Proposal } from '../output/solution3_Proposal';
+import { getStateSizeForAccount } from '../utils/gas';
+import { Voter } from '../output/solution3_Voter';
 
 describe('solution3', () => {
     let blockchain: Blockchain;
     let proposal: SandboxContract<Proposal>;
+    let proposal_voter: SandboxContract<Voter>;
 
     let deployer: SandboxContract<TreasuryContract>;
     let voter: SandboxContract<TreasuryContract>;
@@ -28,6 +31,14 @@ describe('solution3', () => {
 
         deployer = await blockchain.treasury('deployer');
         voter = await blockchain.treasury('voter');
+
+        proposal_voter = blockchain.openContract(
+            await Voter.fromInit({
+                $$type: 'InitVoter',
+                proposal: proposal.address,
+                voter: voter.address,
+            }),
+        );
 
         // deploy contract
         const deployResult = await proposal.send(
@@ -172,13 +183,34 @@ describe('solution3', () => {
     });
 
     // it('testsss', async () => {
-    //     const account = await getStateSizeForAccount(blockchain, proposal.address);
+    //     // vote
+    //     const voteResult = await proposal.send(
+    //         voter.getSender(),
+    //         { value: toNano('0.1') },
+    //         {
+    //             $$type: 'Vote',
+    //             value: true,
+    //         },
+    //     );
+    //     expect(voteResult.transactions).toHaveTransaction({
+    //         from: voter.address,
+    //         to: proposal.address,
+    //         success: true,
+    //     });
+    //     expect(voteResult.transactions).toHaveTransaction({
+    //         from: proposal.address,
+    //         // to: proposal.address,
+    //         success: true,
+    //     });
+    //     expect(await proposal.getProposalState()).toMatchObject({ yesCount: 1n, noCount: 0n });
+
+    //     const account = await getStateSizeForAccount(blockchain, proposal_voter.address);
 
     //     const time_delta = 24 * 60 * 60;
     //     const bit_price = 1;
     //     const cell_price = 500;
 
-    //     // expect(account).toMatchObject({ cells: 1, bits: 0 });
+    //     expect(account).toMatchObject({ cells: 1, bits: 0 });
 
     //     const bits_fees = account.bits * bit_price;
     //     const cells_fees = account.cells * cell_price;
