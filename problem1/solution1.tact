@@ -23,8 +23,8 @@ struct Config18 {
     // cell_price_ps: Int as uint64;
 }
 
-const ACCOUNT_BITS: Int = 2740;
-const ACCOUNT_CELLS: Int = 6;
+const ACCOUNT_BITS: Int = 4520;
+const ACCOUNT_CELLS: Int = 10;
 const BIT_PRICE_PS: Int = 1;
 const CELL_PRICE_PS: Int = 500;
 
