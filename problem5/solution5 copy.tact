@@ -5,11 +5,9 @@ const INVALID_OWNER: Int = 13374;
 
 message VoteInternal {
     success: Bool;
-    value: Bool;
     voter: Address;
+    value: Bool;
 }
-
-message(0xd53276db) Excesses {}
 
 message Vote {
     value: Bool;
@@ -58,7 +56,6 @@ contract Proposal {
 
     receive(msg: Vote) {
         let ctx = context();
-        require(ctx.value >= ton("0.1"), "Value must be greater than 0");
 
         let deployFee: Int = getForwardFee(4, 183 * 8, false);
         let voteMsgFee: Int = getForwardFee(1, 11 * 8, false);
@@ -73,7 +70,6 @@ contract Proposal {
                 proposal: myAddress(),
                 voter: sender()
             }),
-            bounce: false,
             value: 0,
             mode: SendRemainingValue | SendIgnoreErrors,
             body: msg.toCell()
@@ -81,21 +77,25 @@ contract Proposal {
     }
 
     receive(msg: VoteInternal) {
-        if (msg.success && msg.value) {
-            self.yesCount += 1;
-        } 
-        if (msg.success && !msg.value) {
-            self.noCount += 1;
-        }
-
-        message(MessageParameters{
+        send(SendParameters{
             to: msg.voter,
             value: 0,
             mode: SendRemainingValue | SendIgnoreErrors,
-            body: Excesses{}.toCell(),
         });
 
-        throwUnless(BAD_VOTE, msg.success);
+        let voter = initOf Voter(InitVoter{
+            proposal: myAddress(),
+            voter: msg.voter
+        });
+        
+        nativeThrowUnless(INVALID_OWNER, contractAddress(voter) == sender());
+        nativeThrowUnless(BAD_VOTE, msg.success);
+
+        if (msg.value) {
+            self.yesCount += 1;
+        } else {
+            self.noCount += 1;
+        }
     }
 
     get fun proposalState(): ProposalState {
@@ -122,29 +122,27 @@ contract Voter {
         nativeThrowUnless(INVALID_OWNER, sender() == self.proposal);
 
         if (self.voted) {
-            message(MessageParameters{
+            send(SendParameters{
                 to: self.proposal,
                 value: 0,
-                mode: SendRemainingBalance | SendIgnoreErrors,
-                bounce: false,
+                mode: SendRemainingValue | SendIgnoreErrors,
                 body: VoteInternal{
                     success: false,
-                    value: msg.value,
                     voter: self.owner,
+                    value: msg.value
                 }.toCell()
             });
             return;
         }
 
-        message(MessageParameters{
+        send(SendParameters{
             to: self.proposal,
             value: 0,
-            mode: SendRemainingBalance | SendIgnoreErrors,
-            bounce: false,
+            mode: SendRemainingValue | SendIgnoreErrors,
             body: VoteInternal{
                 success: true,
-                value: msg.value,
                 voter: self.owner,
+                value: msg.value
             }.toCell()
         });
 

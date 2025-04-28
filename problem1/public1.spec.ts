@@ -163,6 +163,29 @@ describe('solution1', () => {
         expect(await proposal.getProposalState()).toMatchObject({ yesCount: 1n, noCount: 0n });
     });
 
+    it('Excess', async () => {
+        // vote
+        const voteResult = await proposal.send(
+            voter.getSender(),
+            { value: toNano('0.1') },
+            {
+                $$type: 'Vote',
+                value: true,
+            },
+        );
+        expect(voteResult.transactions).toHaveTransaction({
+            from: voter.address,
+            to: proposal.address,
+            success: true,
+        });
+        expect(voteResult.transactions).toHaveTransaction({
+            from: proposal.address,
+            to: voter.address,
+            success: true,
+        });
+        expect(await proposal.getProposalState()).toMatchObject({ yesCount: 1n, noCount: 0n });
+    });
+
     // it('testsss', async () => {
     //     const account = await getStateSizeForAccount(blockchain, proposal.address);
 

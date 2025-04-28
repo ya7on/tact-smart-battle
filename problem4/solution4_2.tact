@@ -10,8 +10,16 @@ message DeployNewProposal {
 contract ProposalMaster {
     nextProposalId: Int as uint32 = 0;
 
-    // deploy
-    receive() { }
+    receive() {
+        let ctx = context();
+        if (myBalance() > ton("0.011")) {
+            send(SendParameters {
+                to: sender(),
+                value: myBalance() - ton("0.011"),
+                mode: SendPayFwdFeesSeparately | SendIgnoreErrors,
+            });
+        }
+    }
 
     receive(msg: DeployNewProposal) {
         require(msg.votingEndingAt > now(), "Voting period has already ended.");
@@ -24,16 +32,26 @@ contract ProposalMaster {
             proposalId: proposalId,
         });
 
+        let ctx = context();
         send(SendParameters {
             to: contractAddress(proposal),
-            value: 0,
-            mode: SendRemainingValue,
+            value: ctx.readForwardFee() * 10,
+            mode: SendPayFwdFeesSeparately,
             code: proposal.code,
             data: proposal.data,
             body: ProposalStateRequest {
                 votingEndingAt: msg.votingEndingAt,
+                initiator: sender(),
             }.toCell(),
         });
+
+        if (myBalance() > ton("0.01")) {
+            send(SendParameters {
+                to: sender(),
+                value: myBalance() - ton("0.01") - ctx.readForwardFee() * 10,
+                mode: SendPayFwdFeesSeparately | SendIgnoreErrors,
+            });
+        }
     }
 
     get fun nextProposalId(): Int {
@@ -57,6 +75,7 @@ struct ProposalState {
 
 message ProposalStateRequest {
     votingEndingAt: Int as uint32;
+    initiator: Address;
 }
 
 contract Proposal {
@@ -83,6 +102,12 @@ contract Proposal {
 
         self.votingEndingAt = msg.votingEndingAt;
         self.activated = true;
+
+        send(SendParameters {
+            to: msg.initiator,
+            value: 0,
+            mode: SendRemainingValue,
+        });
     }
 
     receive(msg: Vote) {

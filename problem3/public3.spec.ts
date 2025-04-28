@@ -80,6 +80,28 @@ describe('solution3', () => {
     });
 
     it('Anyone can deploy the proposal contract', async () => {
+        // vote
+        const voteResult = await proposal.send(
+            voter.getSender(),
+            { value: toNano('0.1') },
+            {
+                $$type: 'Vote',
+                value: true,
+            },
+        );
+        expect(voteResult.transactions).toHaveTransaction({
+            from: voter.address,
+            to: proposal.address,
+            success: true,
+        });
+        expect(voteResult.transactions).toHaveTransaction({
+            from: proposal.address,
+            // to: proposal.address,
+            success: true,
+        });
+
+        expect(await proposal.getProposalState()).toMatchObject({ yesCount: 1n, noCount: 0n });
+
         const deployer2 = await blockchain.treasury('deployer2');
         const proposal2 = blockchain.openContract(
             await Proposal.fromInit({
@@ -128,31 +150,31 @@ describe('solution3', () => {
         expect(await proposal.getProposalState()).toMatchObject({ yesCount: 0n, noCount: 0n });
     });
 
-    // it('Only the first hundred (100) votes can be accepted.', async () => {
-    //     for (let i = 0; i < 100; i++) {
-    //         const voter = await blockchain.treasury(`voter${i}`);
-    //         await proposal.send(
-    //             voter.getSender(),
-    //             { value: toNano('0.1') },
-    //             {
-    //                 $$type: 'Vote',
-    //                 value: true,
-    //             },
-    //         );
-    //         expect(await proposal.getProposalState()).toMatchObject({ yesCount: BigInt(i + 1), noCount: 0n });
-    //     }
+    it('Only the first hundred (100) votes can be accepted.', async () => {
+        for (let i = 0; i < 228; i++) {
+            const voter = await blockchain.treasury(`voter${i}`);
+            await proposal.send(
+                voter.getSender(),
+                { value: toNano('0.1') },
+                {
+                    $$type: 'Vote',
+                    value: true,
+                },
+            );
+            expect(await proposal.getProposalState()).toMatchObject({ yesCount: BigInt(i + 1), noCount: 0n });
+        }
 
-    //     const voter = await blockchain.treasury(`voter_last`);
-    //     await proposal.send(
-    //         voter.getSender(),
-    //         { value: toNano('0.1') },
-    //         {
-    //             $$type: 'Vote',
-    //             value: true,
-    //         },
-    //     );
-    //     expect(await proposal.getProposalState()).toMatchObject({ yesCount: 100n, noCount: 0n });
-    // });
+        // const voter = await blockchain.treasury(`voter_last`);
+        // await proposal.send(
+        //     voter.getSender(),
+        //     { value: toNano('0.1') },
+        //     {
+        //         $$type: 'Vote',
+        //         value: true,
+        //     },
+        // );
+        // expect(await proposal.getProposalState()).toMatchObject({ yesCount: 101n, noCount: 0n });
+    });
     
     it('Any voter can vote only one time.', async () => {
         // vote
@@ -171,13 +193,13 @@ describe('solution3', () => {
             { value: toNano('0.1') },
             {
                 $$type: 'Vote',
-                value: true,
+                value: false,
             },
         );
         expect(voteResult.transactions).toHaveTransaction({
-            from: proposal.address,
+            on: proposal.address,
             success: false,
-            exitCode: 51288,
+            exitCode: 35645,
         });
         expect(await proposal.getProposalState()).toMatchObject({ yesCount: 1n, noCount: 0n });
     });

@@ -16,13 +16,6 @@ struct Init {
     votingEndingAt: Int as uint32;
 }
 
-struct Config18 {
-    data: map<Int, Int>;
-    // utime_since: Int as uint32;
-    // bit_price_ps: Int as uint64;
-    // cell_price_ps: Int as uint64;
-}
-
 const ACCOUNT_BITS: Int = 4520;
 const ACCOUNT_CELLS: Int = 10;
 const BIT_PRICE_PS: Int = 1;
@@ -85,8 +78,8 @@ contract Proposal {
 
         send(SendParameters {
             to: sender(),
-            value: myBalance() - self.minBalance,
-            mode: SendIgnoreErrors,
+            value: 0,
+            mode: SendRemainingValue,
         });
     }
 

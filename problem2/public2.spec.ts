@@ -24,7 +24,7 @@ it('solution2', async () => {
 
     // create proposal
     const currentTime = BigInt(Math.floor(Date.now() / 1000));
-    await proposalMaster.send(
+    const deployNewProposalResult = await proposalMaster.send(
         masterDeployer.getSender(),
         {
             value: toNano('0.1'),
@@ -35,6 +35,16 @@ it('solution2', async () => {
             votingEndingAt: currentTime + 24n * 60n * 60n,
         },
     );
+    expect(deployNewProposalResult.transactions).toHaveTransaction({
+        from: masterDeployer.address,
+        to: proposalMaster.address,
+        success: true,
+    });
+    expect(deployNewProposalResult.transactions).toHaveTransaction({
+        from: proposalMaster.address,
+        success: true,
+        deploy: true,
+    });
 
     // vote
     const voter = await blockchain.treasury('voter');
